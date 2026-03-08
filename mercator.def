@@ -1,0 +1,56 @@
+# apptainer definition file
+
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=Europe/Madrid
+
+    # Install build dependencies
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        g++ \
+        gfortran \
+        wget \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install cmake (architecture aware)
+    CMAKE_VERSION=3.23.2
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  CMAKE_ARCH="linux-x86_64" ;;
+        aarch64) CMAKE_ARCH="linux-aarch64" ;;
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;;
+    esac
+    wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-${CMAKE_ARCH}.sh" \
+        -O /tmp/cmake-install.sh
+    chmod +x /tmp/cmake-install.sh
+    /tmp/cmake-install.sh --skip-license --prefix=/usr/local
+    rm /tmp/cmake-install.sh
+
+    # Build
+    cd /app
+    chmod +x ./build.sh && ./build.sh -b Release
+    strip ./mercator
+
+    # Remove build dependencies
+    apt-get remove -y build-essential g++ gfortran wget cmake
+    apt-get autoremove -y
+    apt-get install -y --no-install-recommends libgomp1 libgfortran5
+    rm -rf /var/lib/apt/lists/*
+
+%files
+    . /app
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    exec /app/mercator "$@"
+
+%labels
+    Author Antoine Allard, Robert Jankowski
+    Version 1.0

@@ -97,7 +97,10 @@ The following options are available:
     -p             Beta+kappas post-processing step.
     -e             Only infer kappas for a given input network. Then exit and save these 
                    hidden degrees to file.
-  )";
+    -i [VALUE]     Specify the maximum number of iterations for kappa convergence.
+                   Default: 500. Applies to both KAPPA_MAX_NB_ITER_CONV and
+                   KAPPA_MAX_NB_ITER_CONV_2.
+                   )";
   std::cout << help << '\n';
 }
 
@@ -120,7 +123,7 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
 
   // Parsing options.
   int opt;
-  while ((opt = getopt(argc,argv,"ab:cfkpo:r:qs:vd:e")) != -1)
+  while ((opt = getopt(argc,argv,"ab:cfki:po:r:qs:vd:e")) != -1)
   {
     switch(opt)
     {
@@ -170,6 +173,11 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
       case 's':
         the_graph.CUSTOM_SEED = true;
         the_graph.SEED = std::stoi(optarg);
+        break;
+
+      case 'i':
+        the_graph.KAPPA_MAX_NB_ITER_CONV   = std::stoi(optarg);
+        the_graph.KAPPA_MAX_NB_ITER_CONV_2 = std::stoi(optarg);
         break;
 
       case 'v':

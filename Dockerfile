@@ -1,31 +1,45 @@
-FROM ubuntu:20.04
+# syntax=docker/dockerfile:1
 
-ENV DEBIAN_FRONTEND="noninteractive" TZ="Europe/Madrid"
+# ---- Stage 1: build ----
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive TZ=Europe/Madrid
 
 RUN apt-get update && \
-	apt-get install -y \
+    apt-get install -y --no-install-recommends \
         build-essential \
-        git \
-        autoconf \
-        libtool \
-        pkg-config \
         g++ \
-        gcc-9 \
+        gfortran \
         wget \
-        gfortran
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install updated version of cmake
 ARG CMAKE_VERSION=3.23.2
-RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh \
-      -q -O /tmp/cmake-install.sh \
-      && chmod u+x /tmp/cmake-install.sh \
-      && mkdir /usr/bin/cmake \
-      && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
-      && rm /tmp/cmake-install.sh
-ENV PATH="/usr/bin/cmake/bin:${PATH}"
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  CMAKE_ARCH="linux-x86_64" ;; \
+        aarch64) CMAKE_ARCH="linux-aarch64" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-${CMAKE_ARCH}.sh" \
+        -O /tmp/cmake-install.sh && \
+    chmod +x /tmp/cmake-install.sh && \
+    /tmp/cmake-install.sh --skip-license --prefix=/usr/local && \
+    rm /tmp/cmake-install.sh
 
 COPY . /app
 WORKDIR /app
+RUN chmod +x ./build.sh && ./build.sh -b Release && strip ./mercator
 
-RUN chmod +x ./build.sh && ./build.sh -b Release
-ENTRYPOINT [ "./mercator" ]
+# ---- Stage 2: runtime ----
+FROM ubuntu:22.04
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libgomp1 \
+        libgfortran5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/mercator /app/mercator
+WORKDIR /app
+ENTRYPOINT ["./mercator"]

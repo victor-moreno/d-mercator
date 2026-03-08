@@ -121,8 +121,8 @@ class embeddingSD_t
     // Number of steps for integration for the expected distance between adjacent vertices.
     const int EXP_DIST_NB_INTEGRATION_STEPS = 1000;
     // Maximal number of attempts to reach convergence of the updated values of kappa.
-    const int KAPPA_MAX_NB_ITER_CONV =  500;
-    const int KAPPA_MAX_NB_ITER_CONV_2 = 500;
+    int KAPPA_MAX_NB_ITER_CONV =  500;
+    int KAPPA_MAX_NB_ITER_CONV_2 = 500;
     // // Criterion for the change of the nature of the criterion for the convergence during the
     // //   maximization of the angular positions.
     // int LIMIT_FOR_CONVERGENCE_CRITERION = 625;

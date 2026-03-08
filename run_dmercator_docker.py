@@ -25,7 +25,8 @@ def parse_args():
         -i data/mydata.edge \
         -d 2 \
         -v 1 \ # 1 - turn on that option
-        -c 1
+        -c 1 \
+        --kappa_max_iter 2000
     """))
     parser.add_argument('-i', '--input', type=str,
                         required=True, help="Path to edgelist")
@@ -45,6 +46,8 @@ def parse_args():
                         required=False, help="Validates and characterizes the inferred random network ensamble")
     parser.add_argument('-s', '--seed', type=float, default=None,
                         required=False, help="Random seed")
+    parser.add_argument('--kappa_max_iter', type=int, default=None,
+                        required=False, help="Maximum number of iterations for kappa convergence (mercator -i flag). Default: 500")
     args = parser.parse_args()
     return args
 
@@ -81,6 +84,9 @@ if __name__ == '__main__':
         seed = ''
         env_var = ''
 
+    kappa_max_iter = f'-i {args.kappa_max_iter}' if args.kappa_max_iter is not None else ''
+
+
     run_command = f"""
       docker run -d --rm {env_var} -v {os.path.abspath(folder)}:/data rjankowskiub/dmercator \
         -d {args.dimension} \
@@ -91,6 +97,7 @@ if __name__ == '__main__':
         {args.no_kappa_postprocessing} \
         {args.validation_mode} \
         {seed} \
+        {kappa_max_iter} \
         /data/{filename}
     """
     os.system(run_command)
